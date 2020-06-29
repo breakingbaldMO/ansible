@@ -1,0 +1,90 @@
+---
+- hosts: localhost
+  gather_facts: no
+  module_defaults:
+    group/aws:
+      region: "us-east-1"
+  tasks:
+   - name: Create Developer Security Group
+     ec2_group:
+        region: us-east-1
+        name: Module5-developer-sg
+        description: developer security group
+        vpc_id: "{{ vpc.vpc.id }}"
+        rules:
+          - proto: tcp
+            ports:
+            - 22
+            - 80
+            cidr_ip: 0.0.0.0/0
+            rule_desc: allow all to ports 22 and 80
+          - proto: tcp
+            ports:
+            - 5000
+            cidr_ip: 98.20.129.31/32
+        state: present
+     register: M5_developer_sg
+   - name: Create Mododule5-postgres-tag-sg
+     ec2_group:
+        region: us-east-1
+        name: Module5-postgres-tag-sg
+        description: M5 postgres-tag sg
+        vpc_id: "{{ vpc.vpc.id }}"
+        state: present
+     register: M5_postgres_tag
+   - name: Create Module5-postgres-sg
+     ec2_group:
+        region: us-east-1
+        name: Module5-postgres-sg
+        description: M5 postgres sg
+        vpc_id: "{{ vpc.vpc.id }}"
+        rules:
+          - proto: tcp
+            ports:
+              - 5432
+            group_id: "{{ M5_postgres_tag.group_id }}"
+        state: present
+     register: M5_postgres
+   - name: Define Module5-postgres-tag-sg
+     ec2_group:
+        region: us-east-1
+        name: Module5-postgres-tag-sg
+        description: M5 postgres-tag sg
+        vpc_id: "{{ vpc.vpc.id }}"
+        rules:
+          - proto: tcp
+            ports:
+              - 5432
+            group_id: "{{ M5_postgres.group_id }}"
+        state: present
+     register: M5_postgres_tag
+   - name: Create Default SG
+     ec2_group:
+        region: us-east-1
+        name: Default SG
+        description: M5 default sg for rds
+        vpc_id: "{{ vpc.vpc.id }}"
+        rules:
+          - proto: tcp
+            ports:
+              - 22
+            cidr_ip: 0.0.0.0/0
+        state: present
+     register: M5_default_sg
+   - name: Create Default SG
+     ec2_group:
+        region: us-east-1
+        name: Default SG
+        description: M5 default sg for rds
+        vpc_id: "{{ vpc.vpc.id }}"
+        rules:
+          - proto: tcp
+            ports:
+              - 22
+            cidr_ip: 0.0.0.0/0
+          - proto: all
+            from_port: 10050
+            to_port: 10050
+            group_id: "{{ M5_default_sg.group_id }}"
+        state: present
+     register: M5_default_sg

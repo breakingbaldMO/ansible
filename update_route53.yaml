@@ -1,0 +1,55 @@
+---
+- hosts: localhost
+  gather_facts: no
+  module_defaults:
+    group/aws:
+      region: "us-east-1"
+  tasks:
+    - name: Update Route53 record with alias to ELB
+      route53:
+        state: present
+        zone: elisamek.codes
+        record: www.elisamek.codes
+        identifier: elisamek.codes
+        type: A
+        region: us-east-1
+        value: "{{ M5_lb.dns_name }}"
+        alias: True
+        alias_hosted_zone_id: "{{ M5_lb.canonical_hosted_zone_id }}"
+        overwrite: yes
+    - name: Update Route53 record with alias to ELB
+      route53:
+        state: present
+        zone: elisamek.codes
+        record: elisamek.codes
+        identifier: elisamek.codes
+        region: us-east-1
+        type: A
+        value: "{{ M5_lb.dns_name }}"
+        alias: True
+        alias_hosted_zone_id: "{{ M5_lb.canonical_hosted_zone_id }}"
+        overwrite: yes
+    - name: Add A record to Route53
+      route53:
+        state: present
+        zone: elisamek.codes
+        record: elisamek.codes
+        identifier: elisamek.codes
+        region: us-east-1
+        type: A
+        ttl: 7200
+        value: "{{ eip.addresses[0].public_ip }}"
+        wait: yes
+        overwrite: yes
+    - name: Add A record to Route53 "www"
+      route53:
+        state: present
+        zone: elisamek.codes
+        record: www.elisamek.codes
+        identifier: elisamek.codes
+        region: us-east-1
+        type: A
+        ttl: 7200
+        value: "{{ eip.addresses[0].public_ip }}"
+        wait: yes
+        overwrite: yes

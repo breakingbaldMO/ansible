@@ -1,0 +1,36 @@
+---
+- hosts: localhost
+  gather_facts: no
+  module_defaults:
+    group/aws:
+      region: "us-east-1"
+  tasks:
+    - name: Create RDS Subnet Group
+      rds_subnet_group:
+        region: us-east-1
+        state: present
+        name: rds_subnet_group
+        description: subnet group for rds
+        subnets:
+          - "{{ private_subnet1.subnet.id }}"
+          - "{{ private_subnet2.subnet.id }}"
+      register: rds_subnet_group
+    - name: Restore image-gallery-db
+      rds:
+        command: restore
+        instance_name: image-gallery
+        snapshot: "arn:aws:rds:us-east-1:035118526046:snapshot:image-gallery-final-snapshot"
+        instance_type: db.t2.micro
+        subnet: "{{ rds_subnet_group.subnet_group.name }}"
+        publicly_accessible: yes
+        wait: yes
+        wait_timeout: 1200
+      register: rds
+    - name: Add sg to rds
+      rds:
+         command: modify
+         instance_name: image-gallery
+         region: us-east-1
+         vpc_security_groups:
+          - "{{ M5_postgres.group_id }}"
+          - "{{ M5_default_sg.group_id }}"
